@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* small visual tweaks */
+         :root {
+             --header-height: 64px;
+             --sidebar-width: 250px;
+             --footer-height: 56px;
+         }
+
+        /* Header adjustments */
+        .topbar {
+            height: var(--header-height);
+            z-index: 1100;
+        }
+
+        /* Sidebar styling */
+        .sidebar {
+            background-color: #2d3748;
+            height: calc(100vh - var(--header-height));
+            width: var(--sidebar-width);
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            padding: 20px 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 12px 20px;
+            text-decoration: none;
+            font-size: 18px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar a:hover {
+            background-color: #4A5568;
+        }
+
+        .sidebar a.active {
+            background-color: #4A5568;
+        }
+
+        .sidebar .logout {
+            margin-top: auto;
+            padding-top: 12px;
+        }
+
+        /* Table Styling */
+        .table th, .table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* Footer styling */
+        footer {
+            background-color: #2d3748;
+            color: #fff;
+            text-align: center;
+            padding: 0.75rem 1rem;
+            position: fixed;
+            bottom: 0;
+            left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            height: var(--footer-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        /* Adjust content area - centered */
+        .content {
+            margin-left: var(--sidebar-width);
+            padding: 24px;
+            margin-top: var(--header-height);
+            padding-bottom: calc(var(--footer-height) + 40px);
+            min-height: calc(100vh - var(--header-height) - var(--footer-height));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Card styling */
+        .card {
+            background-color: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Profile Image Styling */
+        .profile-img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #e2e8f0;
+        }
+
+        .profile-upload {
+            position: relative;
+            display: inline-block;
+        }
+
+        .profile-upload input[type="file"] {
+            display: none;
+        }
+
+        .profile-upload label {
+            cursor: pointer;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background-color: #3b82f6;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            transition: background-color 0.3s ease;
+        }
+
+        .profile-upload label:hover {
+            background-color: #2563eb;
+        }
+
+        /* Tablet and Mobile adjustments */
+        @media (max-width: 1023px) {
+            .content {
+                margin-left: 0;
+                padding: 16px;
+                align-items: flex-start;
+            }
+            footer {
+                left: 0;
+                width: 100%;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: calc(100vh - var(--header-height));
+            }
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 640px) {
+            :root {
+                --header-height: 56px;
+                --footer-height: 48px;
+            }
+            
+            .topbar {
+                height: var(--header-height);
+            }
+            
+            .content {
+                padding: 12px;
+                padding-bottom: calc(var(--footer-height) + 20px);
+            }
+            
+            .card {
+                padding: 16px;
+            }
+            
+            .table th, .table td {
+                padding: 8px 4px;
+                font-size: 14px;
+            }
+            
+            .sidebar a {
+                font-size: 16px;
+                padding: 10px 16px;
+            }
+
+            .profile-img {
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        /* Very small mobile screens */
+        @media (max-width: 375px) {
+            .table th, .table td {
+                padding: 6px 2px;
+                font-size: 12px;
+            }
+            
+            .card {
+                padding: 12px;
+            }
+
+            .profile-img {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        /* Dropdown Menu Styles */
+        .action-menu {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .action-toggle {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-dropdown {
+            display: none;
+            position: absolute;
+            right: 50%;
+            transform: translateX(50%);
+            background-color: white;
+            min-width: 150px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            z-index: 100;
+            margin-top: 4px;
+            top: 100%;
+        }
+
+        .action-dropdown.show {
+            display: block;
+        }
+
+        .action-dropdown button {
+            width: 100%;
+            text-align: left;
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #374151;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .action-dropdown button:first-child {
+            border-radius: 6px 6px 0 0;
+        }
+
+        .action-dropdown button:last-child {
+            border-radius: 0 0 6px 6px;
+        }
+
+        .action-dropdown button:hover {
+            background-color: #f3f4f6;
+        }
+
+        .action-dropdown button i {
+            width: 18px;
+            margin-right: 10px;
+            text-align: center;
+        }
+
+        /* Tablet adjustments */
+        @media (max-width: 1023px) {
+            .action-dropdown {
+                right: 0;
+                transform: none;
+            }
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 640px) {
+            .action-dropdown {
+                right: 0;
+                transform: none;
+                min-width: 140px;
+            }
+
+            .action-dropdown button {
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+
+            .action-toggle {
+                padding: 6px 10px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Camera View Styles */
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        #video, #canvas {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 3px solid #e2e8f0;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        .captured-image {
+            width: 100%;
+            max-width: 320px;
+            height: auto;
+            border-radius: 8px;
+            border: 3px solid #e2e8f0;
+            margin: 0 auto;
+            display: block;
+        }
+
+        /* QR Code Styles */
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f9fafb;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        #qrcode, #editQrcode, #viewQrcode {
+            margin: 10px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 230px;
+        }
+
+        #qrcode canvas, #editQrcode canvas, #viewQrcode canvas,
+        #qrcode img, #editQrcode img, #viewQrcode img {
+            display: block !important;
+            margin: 0 auto !important;
+            max-width: 100%;
+            height: auto;
+        }
+
+        #viewQrcode {
+            min-height: 280px;
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                padding: 16px;
+                width: 95%;
+            }
+            
+            .camera-container {
+                max-width: 280px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <!-- Header -->
+    <div class="topbar bg-white shadow-md fixed w-full top-0 left-0" style="height:var(--header-height);">
+        <div class="h-full px-4 lg:px-6 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <!-- Mobile toggle -->
+                <button id="sidebarToggle" class="lg:hidden text-gray-700 p-2 rounded-md focus:outline-none" aria-label="Toggle sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="text-sm sm:text-base lg:text-xl font-bold text-gray-800 truncate max-w-[150px] sm:max-w-none">Python (19877) 8:00 - 10:30 MW</div>
+            </div>
+            <a href="#" class="text-white bg-red-600 py-1.5 px-3 sm:py-2 sm:px-4 rounded-lg hover:bg-red-700 transition hidden sm:inline-flex items-center text-sm sm:text-base">
+                <i class="fas fa-sign-out-alt mr-1 sm:mr-2"></i> <span class="hidden md:inline">Logout</span><span class="md:hidden">Exit</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <nav id="sidebar" class="sidebar hidden lg:flex">
+        <a href="#" class="text-white px-6"><i class="fas fa-users mr-2"></i> User Management</a>
+        <a href="#" class="text-white px-6 active"><i class="fas fa-graduation-cap mr-2"></i> Student Management</a>
+        <a href="#" class="text-white px-6"><i class="fas fa-calendar-check mr-2"></i> Attendance</a>
+        <div class="flex-1"></div>
+        <a href="#" class="text-white logout px-6"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="content">
+        <div class="w-full max-w-7xl px-2 sm:px-0">
+            <!-- Add Student Button -->
+            <div class="mb-4 sm:mb-6 flex justify-end">
+                <button id="addStudentBtn" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 sm:py-2.5 sm:px-6 rounded-lg transition flex items-center gap-2 text-sm sm:text-base">
+                    <i class="fas fa-plus"></i> Add Student
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+                <!-- Student Info Card -->
+                <div class="card w-full">
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">Student Information</h2>
+                    <form>
+                        <!-- Profile Picture -->
+                        <div class="flex justify-center mb-6">
+                            <div class="profile-upload">
+                                <img src="https://via.placeholder.com/120" alt="Profile" class="profile-img" id="profileImage">
+                                <input type="file" id="profileInput" accept="image/*">
+                                <label for="profileInput" title="Change Photo">
+                                    <i class="fas fa-camera"></i>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- ID Number -->
+                        <div class="mb-4">
+                            <label for="idno" class="block text-sm font-medium text-gray-600">ID Number</label>
+                            <input type="text" id="idno" name="idno" placeholder="Enter ID Number" required
+                                class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+
+                        <!-- Last Name -->
+                        <div class="mb-4">
+                            <label for="lastname" class="block text-sm font-medium text-gray-600">Last Name</label>
+                            <input type="text" id="lastname" name="lastname" placeholder="Enter Last Name" required
+                                class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+
+                        <!-- First Name -->
+                        <div class="mb-4">
+                            <label for="firstname" class="block text-sm font-medium text-gray-600">First Name</label>
+                            <input type="text" id="firstname" name="firstname" placeholder="Enter First Name" required
+                                class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+
+                        <!-- Course Dropdown -->
+                        <div class="mb-4">
+                            <label for="course" class="block text-sm font-medium text-gray-600">Course</label>
+                            <select id="course" name="course" required
+                                class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
+                                <option value="">Select Course</option>
+                                <option value="BSIT">BSIT</option>
+                                <option value="CSPS">CSPS</option>
+                                <option value="HRM">HRM</option>
+                                <option value="EDUCATION">EDUCATION</option>
+                            </select>
+                        </div>
+
+                        <!-- Level Dropdown -->
+                        <div class="mb-6">
+                            <label for="level" class="block text-sm font-medium text-gray-600">Level</label>
+                            <select id="level" name="level" required
+                                class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
+                                <option value="">Select Level</option>
+                                <option value="1st">1st Year</option>
+                                <option value="2nd">2nd Year</option>
+                                <option value="3rd">3rd Year</option>
+                                <option value="4th">4th Year</option>
+                            </select>
+                        </div>
+
+                        <!-- Save Button -->
+                        <button type="submit" class="w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                            <i class="fas fa-save"></i> Save Student
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Student Table -->
+                <div class="card w-full">
+                    <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4">Student List</h2>
+                    <div class="overflow-x-auto -mx-4 sm:mx-0">
+                        <div class="inline-block min-w-full align-middle px-4 sm:px-0">
+                            <table class="table w-full min-w-[600px]">
+                                <thead>
+                                    <tr class="bg-gray-50">
+                                        <th class="text-left">ID</th>
+                                        <th class="text-left">ID No</th>
+                                        <th class="text-left">Last Name</th>
+                                        <th class="text-left">First Name</th>
+                                        <th class="text-left">Course</th>
+                                        <th class="text-left">Level</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Example Row 1 -->
+                                    <tr class="hover:bg-gray-50">
+                                        <td>1</td>
+                                        <td>2021-001</td>
+                                        <td>Dela Cruz</td>
+                                        <td>Juan</td>
+                                        <td>BSIT</td>
+                                        <td>3rd Year</td>
+                                        <td class="text-center">
+                                            <div class="action-menu">
+                                                <button class="text-gray-600 hover:text-gray-900 action-toggle" title="Actions">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <div class="action-dropdown">
+                                                    <button class="qr-btn" data-id="1" data-idno="2021-001" data-lastname="Dela Cruz" data-firstname="Juan" data-course="BSIT" data-level="3rd">
+                                                        <i class="fas fa-qrcode text-green-600"></i> View QR
+                                                    </button>
+                                                    <button class="edit-btn" data-id="1" data-idno="2021-001" data-lastname="Dela Cruz" data-firstname="Juan" data-course="BSIT" data-level="3rd">
+                                                        <i class="fas fa-edit text-blue-600"></i> Edit
+                                                    </button>
+                                                    <button class="delete-btn">
+                                                        <i class="fas fa-trash text-red-600"></i> Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <!-- Example Row 2 -->
+                                    <tr class="hover:bg-gray-50">
+                                        <td>2</td>
+                                        <td>2021-002</td>
+                                        <td>Santos</td>
+                                        <td>Maria</td>
+                                        <td>HRM</td>
+                                        <td>2nd Year</td>
+                                        <td class="text-center">
+                                            <div class="action-menu">
+                                                <button class="text-gray-600 hover:text-gray-900 action-toggle" title="Actions">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <div class="action-dropdown">
+                                                    <button class="qr-btn" data-id="2" data-idno="2021-002" data-lastname="Santos" data-firstname="Maria" data-course="HRM" data-level="2nd">
+                                                        <i class="fas fa-qrcode text-green-600"></i> View QR
+                                                    </button>
+                                                    <button class="edit-btn" data-id="2" data-idno="2021-002" data-lastname="Santos" data-firstname="Maria" data-course="HRM" data-level="2nd">
+                                                        <i class="fas fa-edit text-blue-600"></i> Edit
+                                                    </button>
+                                                    <button class="delete-btn">
+                                                        <i class="fas fa-trash text-red-600"></i> Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <!-- Example Row 3 -->
+                                    <tr class="hover:bg-gray-50">
+                                        <td>3</td>
+                                        <td>2021-003</td>
+                                        <td>Reyes</td>
+                                        <td>Pedro</td>
+                                        <td>EDUCATION</td>
+                                        <td>4th Year</td>
+                                        <td class="text-center">
+                                            <div class="action-menu">
+                                                <button class="text-gray-600 hover:text-gray-900 action-toggle" title="Actions">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <div class="action-dropdown">
+                                                    <button class="qr-btn" data-id="3" data-idno="2021-003" data-lastname="Reyes" data-firstname="Pedro" data-course="EDUCATION" data-level="4th">
+                                                        <i class="fas fa-qrcode text-green-600"></i> View QR
+                                                    </button>
+                                                    <button class="edit-btn" data-id="3" data-idno="2021-003" data-lastname="Reyes" data-firstname="Pedro" data-course="EDUCATION" data-level="4th">
+                                                        <i class="fas fa-edit text-blue-600"></i> Edit
+                                                    </button>
+                                                    <button class="delete-btn">
+                                                        <i class="fas fa-trash text-red-600"></i> Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code View Modal -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Student QR Code</h2>
+                <button id="closeQrModal" class="text-gray-500 hover:text-gray-700 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="text-center">
+                <div id="studentInfo" class="mb-4 text-left bg-gray-50 p-4 rounded-lg">
+                    <p class="mb-2"><strong>ID Number:</strong> <span id="qr_idno"></span></p>
+                    <p class="mb-2"><strong>Name:</strong> <span id="qr_name"></span></p>
+                    <p class="mb-2"><strong>Course:</strong> <span id="qr_course"></span></p>
+                    <p class="mb-2"><strong>Level:</strong> <span id="qr_level"></span></p>
+                </div>
+                
+                <div class="flex justify-center mb-4">
+                    <div id="viewQrcode"></div>
+                </div>
+                
+                <button id="downloadViewQR" class="bg-green-600 hover:bg-green-700 text-white py-2.5 px-6 rounded-lg transition">
+                    <i class="fas fa-download mr-2"></i>Download QR Code
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p class="text-sm">&copy; Binghay, Torino 2025</p>
+    </footer>
+
+    <!-- Add Student Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Add New Student</h2>
+                <button id="closeAddModal" class="text-gray-500 hover:text-gray-700 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Camera Section -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Capture Photo</h3>
+                    <div class="camera-container">
+                        <video id="video" autoplay></video>
+                        <canvas id="canvas"></canvas>
+                        <img id="capturedPhoto" class="captured-image" style="display: none;">
+                    </div>
+                    <div class="camera-controls">
+                        <button id="startCamera" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition">
+                            <i class="fas fa-video mr-2"></i>Start Camera
+                        </button>
+                        <button id="capturePhoto" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition" style="display: none;">
+                            <i class="fas fa-camera mr-2"></i>Capture
+                        </button>
+                        <button id="retakePhoto" class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition" style="display: none;">
+                            <i class="fas fa-redo mr-2"></i>Retake
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Section -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Student Details</h3>
+                    <form id="addStudentForm">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600">ID Number</label>
+                            <input type="text" id="add_idno" required class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600">Last Name</label>
+                            <input type="text" id="add_lastname" required class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600">First Name</label>
+                            <input type="text" id="add_firstname" required class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600">Course</label>
+                            <select id="add_course" required class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
+                                <option value="">Select Course</option>
+                                <option value="BSIT">BSIT</option>
+                                <option value="CSPS">CSPS</option>
+                                <option value="HRM">HRM</option>
+                                <option value="EDUCATION">EDUCATION</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600">Level</label>
+                            <select id="add_level" required class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
+                                <option value="">Select Level</option>
+                                <option value="1st">1st Year</option>
+                                <option value="2nd">2nd Year</option>
+                                <option value="3rd">3rd Year</option>
+                                <option value="4th">4th Year</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-3 mt-6">
+                            <button type="button" id="cancelAdd" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2.5 px-4 rounded-lg transition">
+                                <i class="fas fa-times mr-2"></i>Cancel
+                            </button>
+                            <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg transition">
+                                <i class="fas fa-save mr-2"></i>Save
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Edit Student</h2>
+                <button id="closeEditModal" class="text-gray-500 hover:text-gray-700 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Camera Section -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Update Photo</h3>
+                    <div class="camera-container">
+                        <video id="editVideo" autoplay></video>
+                        <canvas id="editCanvas"></canvas>
+                        <img id="editCapturedPhoto" class="captured-image" src="https://via.placeholder.com/320" alt="Current Photo">
+                    </div>
+                    <div class="camera-controls">
+                        <button id="editStartCamera" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition">
+                            <i class="fas fa-video mr-2"></i>Start Camera
+                        </button>
+                        <button id="editCapturePhoto" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition" style="display: none;">
+                            <i class="fas fa-camera mr-2"></i>Capture
+                        </button>
+                        <button id="editRetakePhoto" class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition" style="display: none;">
+                            <i class="fas fa-redo mr-2"></i>Retake
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Section -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Student Details</h3>
+                    <form id="editStudentForm">
+                        <input type="hidden" id="edit_id">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600">ID Number</label>
+                            <input type="text" id="edit_idno" required class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600">Last Name</label>
+                            <input type="text" id="edit_lastname" required class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600">First Name</label>
+                            <input type="text" id="edit_firstname" required class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600">Course</label>
+                            <select id="edit_course" required class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
+                                <option value="">Select Course</option>
+                                <option value="BSIT">BSIT</option>
+                                <option value="CSPS">CSPS</option>
+                                <option value="HRM">HRM</option>
+                                <option value="EDUCATION">EDUCATION</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600">Level</label>
+                            <select id="edit_level" required class="w-full p-3 mt-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
+                                <option value="">Select Level</option>
+                                <option value="1st">1st Year</option>
+                                <option value="2nd">2nd Year</option>
+                                <option value="3rd">3rd Year</option>
+                                <option value="4th">4th Year</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-3 mt-6">
+                            <button type="button" id="cancelEdit" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2.5 px-4 rounded-lg transition">
+                                <i class="fas fa-times mr-2"></i>Cancel
+                            </button>
+                            <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg transition">
+                                <i class="fas fa-save mr-2"></i>Update
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Sidebar toggle script
+        (function () {
+            const toggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            if (!toggle || !sidebar) return;
+            toggle.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+            });
+            // Close sidebar on click outside (mobile)
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth >= 1024) return;
+                if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                    sidebar.classList.add('hidden');
+                }
+            });
+        })();
+
+        // Profile image preview
+        document.getElementById('profileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profileImage').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Modal Management
+        const addModal = document.getElementById('addModal');
+        const editModal = document.getElementById('editModal');
+        const addStudentBtn = document.getElementById('addStudentBtn');
+        const closeAddModal = document.getElementById('closeAddModal');
+        const closeEditModal = document.getElementById('closeEditModal');
+        const cancelAdd = document.getElementById('cancelAdd');
+        const cancelEdit = document.getElementById('cancelEdit');
+
+        // Open Add Modal
+        addStudentBtn.addEventListener('click', () => {
+            addModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        // Close Add Modal
+        function closeAdd() {
+            addModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            stopCamera('video');
+            resetAddForm();
+        }
+        closeAddModal.addEventListener('click', closeAdd);
+        cancelAdd.addEventListener('click', closeAdd);
+
+        // Close Edit Modal
+        function closeEdit() {
+            editModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            stopCamera('editVideo');
+        }
+        closeEditModal.addEventListener('click', closeEdit);
+        cancelEdit.addEventListener('click', closeEdit);
+
+        // Close modal on outside click
+        addModal.addEventListener('click', (e) => {
+            if (e.target === addModal) closeAdd();
+        });
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) closeEdit();
+        });
+
+        // Camera functionality for Add Modal
+        let addStream = null;
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const capturedPhoto = document.getElementById('capturedPhoto');
+        const startCamera = document.getElementById('startCamera');
+        const capturePhoto = document.getElementById('capturePhoto');
+        const retakePhoto = document.getElementById('retakePhoto');
+
+        startCamera.addEventListener('click', async () => {
+            try {
+                addStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = addStream;
+                video.style.display = 'block';
+                canvas.style.display = 'none';
+                capturedPhoto.style.display = 'none';
+                startCamera.style.display = 'none';
+                capturePhoto.style.display = 'inline-block';
+                retakePhoto.style.display = 'none';
+            } catch (err) {
+                alert('Unable to access camera: ' + err.message);
+            }
+        });
+
+        capturePhoto.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const imageData = canvas.toDataURL('image/png');
+            capturedPhoto.src = imageData;
+            
+            video.style.display = 'none';
+            capturedPhoto.style.display = 'block';
+            capturePhoto.style.display = 'none';
+            retakePhoto.style.display = 'inline-block';
+            
+            stopCamera('video');
+        });
+
+        retakePhoto.addEventListener('click', () => {
+            startCamera.click();
+        });
+
+        // Camera functionality for Edit Modal
+        let editStream = null;
+        const editVideo = document.getElementById('editVideo');
+        const editCanvas = document.getElementById('editCanvas');
+        const editCapturedPhoto = document.getElementById('editCapturedPhoto');
+        const editStartCamera = document.getElementById('editStartCamera');
+        const editCapturePhoto = document.getElementById('editCapturePhoto');
+        const editRetakePhoto = document.getElementById('editRetakePhoto');
+
+        editStartCamera.addEventListener('click', async () => {
+            try {
+                editStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                editVideo.srcObject = editStream;
+                editVideo.style.display = 'block';
+                editCanvas.style.display = 'none';
+                editCapturedPhoto.style.display = 'none';
+                editStartCamera.style.display = 'none';
+                editCapturePhoto.style.display = 'inline-block';
+                editRetakePhoto.style.display = 'none';
+            } catch (err) {
+                alert('Unable to access camera: ' + err.message);
+            }
+        });
+
+        editCapturePhoto.addEventListener('click', () => {
+            const context = editCanvas.getContext('2d');
+            editCanvas.width = editVideo.videoWidth;
+            editCanvas.height = editVideo.videoHeight;
+            context.drawImage(editVideo, 0, 0, editCanvas.width, editCanvas.height);
+            
+            const imageData = editCanvas.toDataURL('image/png');
+            editCapturedPhoto.src = imageData;
+            
+            editVideo.style.display = 'none';
+            editCapturedPhoto.style.display = 'block';
+            editCapturePhoto.style.display = 'none';
+            editRetakePhoto.style.display = 'inline-block';
+            
+            stopCamera('editVideo');
+        });
+
+        editRetakePhoto.addEventListener('click', () => {
+            editStartCamera.click();
+        });
+
+        // Stop camera stream
+        function stopCamera(videoId) {
+            const videoElement = document.getElementById(videoId);
+            const stream = videoElement.srcObject;
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
+                videoElement.srcObject = null;
+            }
+        }
+
+        // Form submissions
+        document.getElementById('addStudentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Get form values
+            const idno = document.getElementById('add_idno').value;
+            const lastname = document.getElementById('add_lastname').value;
+            const firstname = document.getElementById('add_firstname').value;
+            const course = document.getElementById('add_course').value;
+            const level = document.getElementById('add_level').value;
+            
+            alert('Student added successfully!');
+            closeAdd();
+        });
+
+        document.getElementById('editStudentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            alert('Student updated successfully!');
+            closeEdit();
+        });
+
+        // Edit button click handlers
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const idno = this.dataset.idno;
+                const lastname = this.dataset.lastname;
+                const firstname = this.dataset.firstname;
+                const course = this.dataset.course;
+                const level = this.dataset.level;
+
+                document.getElementById('edit_id').value = id;
+                document.getElementById('edit_idno').value = idno;
+                document.getElementById('edit_lastname').value = lastname;
+                document.getElementById('edit_firstname').value = firstname;
+                document.getElementById('edit_course').value = course;
+                document.getElementById('edit_level').value = level;
+
+                editModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+
+        // Reset add form
+        function resetAddForm() {
+            document.getElementById('addStudentForm').reset();
+            capturedPhoto.style.display = 'none';
+            video.style.display = 'none';
+            startCamera.style.display = 'inline-block';
+            capturePhoto.style.display = 'none';
+            retakePhoto.style.display = 'none';
+        }
+
+        // Download QR Code functionality
+        document.getElementById('downloadViewQR').addEventListener('click', function() {
+            downloadQRCode('viewQrcode', 'student_qr_code.png');
+        });
+
+        function downloadQRCode(containerId, filename) {
+            const container = document.getElementById(containerId);
+            const canvas = container.querySelector('canvas');
+            
+            if (canvas) {
+                const url = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = url;
+                link.click();
+            }
+        }
+
+        // QR Code View Modal
+        const qrModal = document.getElementById('qrModal');
+        const closeQrModal = document.getElementById('closeQrModal');
+
+        closeQrModal.addEventListener('click', () => {
+            qrModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+
+        qrModal.addEventListener('click', (e) => {
+            if (e.target === qrModal) {
+                qrModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // QR button click handlers
+        document.querySelectorAll('.qr-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const idno = this.dataset.idno;
+                const lastname = this.dataset.lastname;
+                const firstname = this.dataset.firstname;
+                const course = this.dataset.course;
+                const level = this.dataset.level;
+                const id = this.dataset.id;
+
+                // Set student info
+                document.getElementById('qr_idno').textContent = idno;
+                document.getElementById('qr_name').textContent = `${firstname} ${lastname}`;
+                document.getElementById('qr_course').textContent = course;
+                document.getElementById('qr_level').textContent = level + ' Year';
+
+                // Generate QR Code
+                const qrData = JSON.stringify({
+                    id: id,
+                    idno: idno,
+                    name: `${firstname} ${lastname}`,
+                    course: course,
+                    level: level,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Clear previous QR code
+                document.getElementById('viewQrcode').innerHTML = '';
+
+                // Generate new QR code
+                new QRCode(document.getElementById('viewQrcode'), {
+                    text: qrData,
+                    width: 250,
+                    height: 250,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                // Show modal
+                qrModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+        // Dropdown menu toggle
+        document.addEventListener('click', function(e) {
+            // Toggle dropdown
+            if (e.target.closest('.action-toggle')) {
+                e.stopPropagation();
+                const dropdown = e.target.closest('.action-menu').querySelector('.action-dropdown');
+                
+                // Close all other dropdowns
+                document.querySelectorAll('.action-dropdown').forEach(d => {
+                    if (d !== dropdown) d.classList.remove('show');
+                });
+                
+                // Toggle current dropdown
+                dropdown.classList.toggle('show');
+            } 
+            // Close dropdown when clicking outside
+            else if (!e.target.closest('.action-menu')) {
+                document.querySelectorAll('.action-dropdown').forEach(d => {
+                    d.classList.remove('show');
+                });
+            }
+        });
+
+        // Handle delete button clicks
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.delete-btn')) {
+                if (confirm('Are you sure you want to delete this student?')) {
+                    alert('Student deleted successfully!');
+                    // Close dropdown
+                    document.querySelectorAll('.action-dropdown').forEach(d => {
+                        d.classList.remove('show');
+                    });
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

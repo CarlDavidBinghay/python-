@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+    <style>
+        /* small visual tweaks */
+         :root {
+             --header-height: 64px;
+             --sidebar-width: 250px;
+             --footer-height: 56px;
+         }
+
+        /* Header adjustments */
+        .topbar {
+            height: var(--header-height);
+            z-index: 1100;
+        }
+
+        /* Sidebar styling */
+        .sidebar {
+            background-color: #2d3748;
+            height: calc(100vh - var(--header-height));
+            width: var(--sidebar-width);
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            padding: 20px 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 12px 20px;
+            text-decoration: none;
+            font-size: 18px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar a:hover {
+            background-color: #4A5568;
+        }
+
+        .sidebar a.active {
+            background-color: #4A5568;
+        }
+
+        .sidebar .logout {
+            margin-top: auto;
+            padding-top: 12px;
+        }
+
+        /* Table Styling */
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table th {
+            background-color: white;
+            font-weight: 500;
+            color: #374151;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f9fafb;
+        }
+
+        /* Footer styling */
+        footer {
+            background-color: #2d3748;
+            color: #fff;
+            text-align: center;
+            padding: 0.75rem 1rem;
+            position: fixed;
+            bottom: 0;
+            left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            height: var(--footer-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        /* Adjust content area */
+        .content {
+            margin-left: var(--sidebar-width);
+            padding: 24px;
+            margin-top: var(--header-height);
+            padding-bottom: calc(var(--footer-height) + 40px);
+            min-height: calc(100vh - var(--header-height) - var(--footer-height));
+        }
+
+        /* Card styling */
+        .card {
+            background-color: white;
+            padding: 24px;
+            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Date display styling */
+        .date-display {
+            background: white;
+            border: 1px solid #e5e7eb;
+            padding: 20px;
+            border-radius: 4px;
+        }
+
+        /* Tablet and Mobile adjustments */
+        @media (max-width: 1023px) {
+            .content {
+                margin-left: 0;
+                padding: 16px;
+            }
+            footer {
+                left: 0;
+                width: 100%;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: calc(100vh - var(--header-height));
+            }
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 640px) {
+            :root {
+                --header-height: 56px;
+                --footer-height: 48px;
+            }
+            
+            .topbar {
+                height: var(--header-height);
+            }
+            
+            .content {
+                padding: 12px;
+                padding-bottom: calc(var(--footer-height) + 20px);
+            }
+            
+            .card {
+                padding: 16px;
+            }
+            
+            .table th, .table td {
+                padding: 8px 4px;
+                font-size: 14px;
+            }
+            
+            .sidebar a {
+                font-size: 16px;
+                padding: 10px 16px;
+            }
+
+            .date-display {
+                padding: 15px;
+            }
+        }
+
+        /* Very small mobile screens */
+        @media (max-width: 375px) {
+            .table th, .table td {
+                padding: 6px 2px;
+                font-size: 12px;
+            }
+            
+            .card {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <!-- Header -->
+    <div class="topbar bg-white shadow-md fixed w-full top-0 left-0" style="height:var(--header-height);">
+        <div class="h-full px-4 lg:px-6 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <!-- Mobile toggle -->
+                <button id="sidebarToggle" class="lg:hidden text-gray-700 p-2 rounded-md focus:outline-none" aria-label="Toggle sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="text-sm sm:text-base lg:text-xl font-bold text-gray-800 truncate max-w-[150px] sm:max-w-none">Python (19877) 8:00 - 10:30 MW</div>
+            </div>
+            <a href="#" class="text-white bg-red-600 py-1.5 px-3 sm:py-2 sm:px-4 rounded-lg hover:bg-red-700 transition hidden sm:inline-flex items-center text-sm sm:text-base">
+                <i class="fas fa-sign-out-alt mr-1 sm:mr-2"></i> <span class="hidden md:inline">Logout</span><span class="md:hidden">Exit</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <nav id="sidebar" class="sidebar hidden lg:flex">
+        <a href="#" class="text-white px-6"><i class="fas fa-users mr-2"></i> User Management</a>
+        <a href="#" class="text-white px-6"><i class="fas fa-graduation-cap mr-2"></i> Student Management</a>
+        <a href="#" class="text-white px-6 active"><i class="fas fa-calendar-check mr-2"></i> Attendance</a>
+        <div class="flex-1"></div>
+        <a href="#" class="text-white logout px-6"><i class="fas fa-sign-out-alt mr-2"></i> Logout</a>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="content">
+        <div class="max-w-7xl mx-auto">
+            <!-- Date and Go Button Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center mb-6">
+                <!-- Date Display -->
+                <div class="date-display">
+                    <p class="text-sm text-gray-500 mb-1">Date</p>
+                    <h2 class="text-2xl font-normal text-gray-900" id="currentDate">Loading...</h2>
+                    <p class="text-sm text-gray-500 mt-2" id="currentTime">Loading...</p>
+                </div>
+
+                <!-- Go Button -->
+                <div class="flex justify-center md:justify-end">
+                    <button id="goButton" class="bg-green-600 hover:bg-green-700 text-white py-3 px-12 transition text-base font-medium rounded">
+                        GO
+                    </button>
+                </div>
+            </div>
+
+            <!-- Attendance Table -->
+            <div class="card">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-medium text-gray-900">Attendance Records</h2>
+                    <button class="text-gray-600 hover:text-gray-900 text-sm font-medium border-b border-gray-600 hover:border-gray-900">
+                        Export
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto -mx-4 sm:mx-0">
+                    <div class="inline-block min-w-full align-middle px-4 sm:px-0">
+                        <table class="table w-full min-w-[600px]">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Time In</th>
+                                    <th>Name</th>
+                                    <th>Course</th>
+                                    <th>Level</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <!-- Example Row 1 -->
+                                <tr>
+                                    <td>1</td>
+                                    <td>08:15 AM</td>
+                                    <td>Juan Dela Cruz</td>
+                                    <td>BSIT</td>
+                                    <td>3rd Year</td>
+                                </tr>
+                                <!-- Example Row 2 -->
+                                <tr>
+                                    <td>2</td>
+                                    <td>08:20 AM</td>
+                                    <td>Maria Santos</td>
+                                    <td>HRM</td>
+                                    <td>2nd Year</td>
+                                </tr>
+                                <!-- Example Row 3 -->
+                                <tr>
+                                    <td>3</td>
+                                    <td>08:25 AM</td>
+                                    <td>Pedro Reyes</td>
+                                    <td>EDUCATION</td>
+                                    <td>4th Year</td>
+                                </tr>
+                                <!-- Example Row 4 -->
+                                <tr>
+                                    <td>4</td>
+                                    <td>08:30 AM</td>
+                                    <td>Ana Garcia</td>
+                                    <td>CSPS</td>
+                                    <td>1st Year</td>
+                                </tr>
+                                <!-- Example Row 5 -->
+                                <tr>
+                                    <td>5</td>
+                                    <td>08:35 AM</td>
+                                    <td>Carlos Lopez</td>
+                                    <td>BSIT</td>
+                                    <td>2nd Year</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Summary Section -->
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="bg-blue-100 p-4 rounded-lg text-center">
+                            <p class="text-sm text-blue-800 mb-1">Present</p>
+                            <p class="text-2xl font-semibold text-blue-900" id="totalPresent">5</p>
+                        </div>
+                        <div class="bg-green-100 p-4 rounded-lg text-center">
+                            <p class="text-sm text-green-800 mb-1">On Time</p>
+                            <p class="text-2xl font-semibold text-green-900" id="onTime">4</p>
+                        </div>
+                        <div class="bg-yellow-100 p-4 rounded-lg text-center">
+                            <p class="text-sm text-yellow-800 mb-1">Late</p>
+                            <p class="text-2xl font-semibold text-yellow-900" id="late">1</p>
+                        </div>
+                        <div class="bg-red-100 p-4 rounded-lg text-center">
+                            <p class="text-sm text-red-800 mb-1">Absent</p>
+                            <p class="text-2xl font-semibold text-red-900" id="absent">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p class="text-sm">&copy; Binghay, Torino 2025</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Sidebar toggle script
+        (function () {
+            const toggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            if (!toggle || !sidebar) return;
+            toggle.addEventListener('click', () => {
+                sidebar.classList.toggle('hidden');
+            });
+            // Close sidebar on click outside (mobile)
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth >= 1024) return;
+                if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                    sidebar.classList.add('hidden');
+                }
+            });
+        })();
+
+        // Update date and time
+        function updateDateTime() {
+            const now = new Date();
+            
+            // Format date and time together
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+            };
+            const dateStr = now.toLocaleDateString('en-US', options);
+            document.getElementById('currentDate').textContent = dateStr;
+            
+            // Format time
+            const timeStr = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            document.getElementById('currentTime').textContent = timeStr;
+        }
+
+        // Update immediately and then every second
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+
+        // Go button functionality
+        document.getElementById('goButton').addEventListener('click', function() {
+            alert('Attendance scanning started!\n\nReady to scan QR codes for attendance tracking.');
+            // Here you would typically:
+            // 1. Open camera for QR scanning
+            // 2. Process scanned student data
+            // 3. Add to attendance table
+            // 4. Update statistics
+        });
+
+        // Export functionality
+        document.querySelector('.text-blue-600').addEventListener('click', function() {
+            alert('Exporting attendance records...');
+        });
+    </script>
+
+</body>
+</html>
