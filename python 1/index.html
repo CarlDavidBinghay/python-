@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Scanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- QR Code Scanner Library -->
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <!-- QR Code Scanner Library - Using CDN with backup -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-        /* Custom styling for the QR scanner container */
         .qr-scanner-container {
             height: 400px;
             max-width: 100%;
@@ -23,7 +22,6 @@
             overflow: hidden;
         }
 
-        /* Footer styling */
         footer {
             background-color: #2d3748;
             color: #fff;
@@ -32,7 +30,6 @@
             margin-top: auto;
         }
 
-        /* Status message */
         #scanner-status {
             background: rgba(0, 0, 0, 0.7);
             color: white;
@@ -43,7 +40,6 @@
             text-align: center;
         }
 
-        /* Start button styling */
         .start-button {
             background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
@@ -73,7 +69,6 @@
             box-shadow: none;
         }
 
-        /* Loading spinner */
         .spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
@@ -89,7 +84,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Controls */
         .controls {
             display: flex;
             gap: 10px;
@@ -108,14 +102,17 @@
             opacity: 0.9;
         }
 
-        /* Camera preview area */
         #qr-reader {
             width: 100%;
             height: 100%;
-            display: none; /* Hidden until camera starts */
         }
 
-        /* Camera icon */
+        #qr-reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+        }
+
         .camera-icon {
             font-size: 64px;
             margin-bottom: 20px;
@@ -133,56 +130,38 @@
 
     <!-- Main Content -->
     <div class="flex-1 flex justify-center items-center py-10">
-        <!-- Card for QR Scanner -->
         <div class="w-full max-w-lg mx-4 sm:mx-8 md:mx-12 bg-white p-6 rounded-lg shadow-lg">
             <div class="text-center mb-6">
                 <h2 class="text-2xl font-semibold text-gray-800">Scan QR Code</h2>
                 <p class="text-gray-600">Point your camera at a QR code to scan it.</p>
-                <div id="permission-status" class="text-sm text-gray-500 mt-2">Click "Start Camera" to begin scanning</div>
+                <div id="permission-status" class="text-sm text-gray-500 mt-2">Click "Refresh Page" to begin scanning</div>
             </div>
             
             <div class="qr-scanner-container">
-                <!-- Camera icon and start button (visible initially) -->
                 <div id="start-screen" class="text-center">
                     <div class="camera-icon">📷</div>
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">Ready to Scan</h3>
                     <button id="start-camera-btn" class="start-button">
-                        Start Camera
+                        Refresh Page
                     </button>
                     <p class="text-sm text-gray-500 mt-4">We'll ask for camera permission when you click</p>
                 </div>
                 
-                <!-- QR Scanner (hidden until started) -->
-                <div id="qr-reader"></div>
+                <div id="qr-reader" style="display: none;"></div>
                 
-                <!-- Loading spinner (shown when starting) -->
-                <div id="loading-spinner" class="spinner hidden"></div>
+                <div id="loading-spinner" class="spinner" style="display: none;"></div>
                 
-                <!-- Status display -->
-                <div id="scanner-status" class="hidden">Ready</div>
+                <div id="scanner-status" style="display: none;">Ready</div>
                 
-                <!-- Controls (shown when camera is active) -->
-                <div id="camera-controls" class="controls hidden">
+                <div id="camera-controls" class="controls" style="display: none;">
                     <button id="stop-camera-btn" class="control-btn bg-red-500 text-white">
                         Stop Camera
                     </button>
-                    <button id="switch-camera-btn" class="control-btn bg-blue-500 text-white">
-                        Switch Camera
-                    </button>
                 </div>
-            </div>
-            
-            <!-- Camera Selection -->
-            <div id="camera-selection" class="mt-4 hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Select Camera:</label>
-                <select id="camera-select" class="w-full p-2 border border-gray-300 rounded-md">
-                    <option value="">Loading cameras...</option>
-                </select>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
     <footer>
         <p>&copy; Binghay, Torino 2025</p>
     </footer>
@@ -208,42 +187,14 @@
     <script>
         let html5QrCode = null;
         let isScanning = false;
-        let cameras = [];
-        let currentCameraIndex = 0;
         
-        // DOM Elements
-        const startScreen = document.getElementById('start-screen');
-        const startButton = document.getElementById('start-camera-btn');
-        const qrReader = document.getElementById('qr-reader');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const scannerStatus = document.getElementById('scanner-status');
-        const cameraControls = document.getElementById('camera-controls');
-        const cameraSelection = document.getElementById('camera-selection');
-        const cameraSelect = document.getElementById('camera-select');
-        const permissionStatus = document.getElementById('permission-status');
-        const stopButton = document.getElementById('stop-camera-btn');
-        const switchButton = document.getElementById('switch-camera-btn');
-        
-        // Check if HTML5-QRCode library is loaded
-        function checkLibraryLoaded() {
-            if (typeof Html5Qrcode === 'undefined') {
-                updateStatus('❌ QR Scanner library failed to load. Please refresh the page.', 'error');
-                startButton.disabled = true;
-                startButton.textContent = 'Library Error';
-                console.error('Html5Qrcode library not loaded. Check network or CDN.');
-                return false;
-            }
-            return true;
-        }
-        
-        // Update status message
         function updateStatus(message, type = 'info') {
-            scannerStatus.textContent = message;
-            scannerStatus.className = type === 'error' ? 'text-red-500' : 
-                                     type === 'success' ? 'text-green-600' : 'text-gray-800';
-            scannerStatus.classList.remove('hidden');
+            const scannerStatus = document.getElementById('scanner-status');
+            const permissionStatus = document.getElementById('permission-status');
             
-            // Also update permission status
+            scannerStatus.textContent = message;
+            scannerStatus.style.display = 'block';
+            
             if (permissionStatus) {
                 permissionStatus.textContent = message;
                 permissionStatus.className = `text-sm mt-2 ${type === 'error' ? 'text-red-500' : 
@@ -251,28 +202,18 @@
             }
         }
         
-        // Show scan result
         function showResult(message) {
             const resultDiv = document.getElementById('scan-result');
             const resultContent = document.getElementById('result-content');
             
             resultContent.textContent = message;
             resultDiv.classList.remove('hidden');
-            
-            // Play success sound
-            try {
-                const audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
-                audio.volume = 0.3;
-                audio.play();
-            } catch(e) {}
         }
         
-        // Close result popup
         document.getElementById('close-result').addEventListener('click', function() {
             document.getElementById('scan-result').classList.add('hidden');
         });
         
-        // Copy to clipboard
         document.getElementById('copy-btn').addEventListener('click', function() {
             const resultContent = document.getElementById('result-content');
             navigator.clipboard.writeText(resultContent.textContent)
@@ -280,272 +221,108 @@
                     alert('✓ Copied to clipboard');
                     document.getElementById('scan-result').classList.add('hidden');
                 })
-                .catch(err => {
-                    console.error('Copy failed:', err);
-                });
+                .catch(err => console.error('Copy failed:', err));
         });
         
-        // Get available cameras
-        async function getCameras() {
+        async function startCamera() {
+            const startScreen = document.getElementById('start-screen');
+            const qrReader = document.getElementById('qr-reader');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const cameraControls = document.getElementById('camera-controls');
+            const startButton = document.getElementById('start-camera-btn');
+            
+            startScreen.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+            startButton.disabled = true;
+            updateStatus('Starting camera...');
+            
             try {
-                if (!checkLibraryLoaded()) return [];
+                html5QrCode = new Html5Qrcode("qr-reader");
                 
-                const devices = await Html5Qrcode.getCameras();
-                cameras = devices || [];
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                };
                 
-                if (cameras.length > 1) {
-                    cameraSelection.classList.remove('hidden');
-                    cameraSelect.innerHTML = '';
-                    
-                    cameras.forEach((device, index) => {
-                        const option = document.createElement('option');
-                        option.value = device.id;
-                        option.text = device.label || `Camera ${index + 1}`;
-                        cameraSelect.appendChild(option);
-                    });
-                    
-                    // Set default to rear camera if available
-                    const rearCamera = cameras.find(device => 
-                        device.label?.toLowerCase().includes('back') || 
-                        device.label?.toLowerCase().includes('rear') ||
-                        device.label?.toLowerCase().includes('environment')
-                    );
-                    
-                    if (rearCamera) {
-                        currentCameraIndex = cameras.findIndex(cam => cam.id === rearCamera.id);
-                        cameraSelect.value = rearCamera.id;
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText) => {
+                        updateStatus('✓ QR Code detected', 'success');
+                        showResult(decodedText);
+                    },
+                    (errorMessage) => {
+                        // Silent error handling
                     }
-                }
+                );
                 
-                return cameras;
+                isScanning = true;
+                loadingSpinner.style.display = 'none';
+                qrReader.style.display = 'block';
+                cameraControls.style.display = 'flex';
+                updateStatus('✓ Camera active - Point at QR code', 'success');
+                
             } catch (error) {
-                console.warn('Could not get camera list:', error);
-                updateStatus('⚠️ Could not load camera list', 'info');
-                return [];
+                console.error('Camera error:', error);
+                loadingSpinner.style.display = 'none';
+                startScreen.style.display = 'block';
+                startButton.disabled = false;
+                
+                if (error.name === 'NotAllowedError') {
+                    updateStatus('❌ Camera permission denied', 'error');
+                    alert('Please allow camera access and try again');
+                } else if (error.name === 'NotFoundError') {
+                    updateStatus('❌ No camera found', 'error');
+                } else {
+                    updateStatus('❌ Failed to load scanner. Check internet connection.', 'error');
+                }
             }
         }
         
-        // Stop scanner
         async function stopScanner() {
             if (html5QrCode && isScanning) {
                 try {
                     await html5QrCode.stop();
                     isScanning = false;
                     
-                    // Show start screen, hide scanner and controls
-                    startScreen.classList.remove('hidden');
-                    qrReader.style.display = 'none';
-                    cameraControls.classList.add('hidden');
-                    cameraSelection.classList.add('hidden');
+                    document.getElementById('start-screen').style.display = 'block';
+                    document.getElementById('qr-reader').style.display = 'none';
+                    document.getElementById('camera-controls').style.display = 'none';
                     
                     updateStatus('Camera stopped');
-                    startButton.disabled = false;
-                    startButton.textContent = 'Start Camera Again';
-                    
-                    return true;
+                    document.getElementById('start-camera-btn').disabled = false;
+                    document.getElementById('start-camera-btn').textContent = 'Start Camera Again';
                 } catch (error) {
-                    console.error('Error stopping scanner:', error);
-                    updateStatus('Error stopping camera', 'error');
-                    return false;
-                }
-            }
-            return true;
-        }
-        
-        // Switch camera
-        async function switchCamera() {
-            if (cameras.length < 2) {
-                updateStatus('Only one camera available', 'info');
-                return;
-            }
-            
-            currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-            const newCameraId = cameras[currentCameraIndex].id;
-            cameraSelect.value = newCameraId;
-            
-            if (isScanning) {
-                await stopScanner();
-                setTimeout(() => startCamera(newCameraId), 500);
-            }
-        }
-        
-        // Start camera function
-        async function startCamera(cameraId = null) {
-            // Check if library is loaded first
-            if (!checkLibraryLoaded()) {
-                updateStatus('❌ Scanner library not loaded', 'error');
-                return;
-            }
-            
-            // Show loading, hide start screen
-            loadingSpinner.classList.remove('hidden');
-            startScreen.classList.add('hidden');
-            startButton.disabled = true;
-            updateStatus('Starting camera...');
-            
-            try {
-                // Initialize scanner
-                html5QrCode = new Html5Qrcode("qr-reader");
-                
-                // Try to get cameras first
-                await getCameras();
-                
-                // Use specified camera or default to rear camera
-                let cameraToUse;
-                if (cameraId) {
-                    cameraToUse = cameraId;
-                } else if (cameras.length > 0) {
-                    // Try to find rear camera
-                    const rearCamera = cameras.find(cam => 
-                        cam.label?.toLowerCase().includes('back') || 
-                        cam.label?.toLowerCase().includes('rear') ||
-                        cam.label?.toLowerCase().includes('environment')
-                    );
-                    cameraToUse = rearCamera ? rearCamera.id : cameras[0].id;
-                } else {
-                    cameraToUse = { facingMode: "environment" };
-                }
-                
-                const config = {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0
-                };
-                
-                // Start the scanner
-                await html5QrCode.start(
-                    cameraToUse,
-                    config,
-                    (decodedText) => {
-                        // QR Code detected!
-                        updateStatus('✓ QR Code detected', 'success');
-                        showResult(decodedText);
-                        
-                        // Flash effect
-                        qrReader.style.filter = 'brightness(1.5)';
-                        setTimeout(() => {
-                            qrReader.style.filter = 'none';
-                        }, 200);
-                    },
-                    (errorMessage) => {
-                        // Ignore scanning errors
-                        if (!errorMessage.includes('NotFoundException')) {
-                            console.debug('Scanning:', errorMessage);
-                        }
-                    }
-                );
-                
-                // Success! Update UI
-                isScanning = true;
-                loadingSpinner.classList.add('hidden');
-                qrReader.style.display = 'block';
-                cameraControls.classList.remove('hidden');
-                
-                updateStatus('✓ Camera active - Point at QR code', 'success');
-                
-            } catch (error) {
-                console.error('Camera start error:', error);
-                loadingSpinner.classList.add('hidden');
-                startScreen.classList.remove('hidden');
-                startButton.disabled = false;
-                
-                // Handle specific errors
-                if (error.name === 'NotAllowedError' || error.message.includes('permission')) {
-                    updateStatus('❌ Camera permission denied', 'error');
-                    startButton.textContent = 'Grant Camera Permission';
-                    
-                    // Show instructions
-                    setTimeout(() => {
-                        alert('To allow camera access:\n\n1. Click the lock icon (🔒) in your address bar\n2. Find "Camera" in the list\n3. Change from "Block" to "Allow"\n4. Click "Start Camera" again');
-                    }, 500);
-                    
-                } else if (error.name === 'NotFoundError' || error.message.includes('camera')) {
-                    updateStatus('❌ No camera found on device', 'error');
-                    startButton.textContent = 'No Camera Available';
-                    
-                } else if (error.message.includes('Html5Qrcode')) {
-                    updateStatus('❌ Scanner initialization error', 'error');
-                    startButton.textContent = 'Refresh Page';
-                    startButton.onclick = function() {
-                        location.reload();
-                    };
-                    
-                } else {
-                    updateStatus(`❌ Error: ${error.message}`, 'error');
-                    startButton.textContent = 'Try Again';
+                    console.error('Error stopping:', error);
                 }
             }
         }
         
-        // Event Listeners
-        startButton.addEventListener('click', function() {
-            startCamera();
-        });
-        
-        stopButton.addEventListener('click', function() {
-            stopScanner();
-        });
-        
-        switchButton.addEventListener('click', function() {
-            switchCamera();
-        });
-        
-        cameraSelect.addEventListener('change', function(e) {
-            if (e.target.value && isScanning) {
-                stopScanner();
-                setTimeout(() => startCamera(e.target.value), 500);
+        document.getElementById('start-camera-btn').addEventListener('click', function() {
+            if (this.textContent === 'Refresh Page') {
+                location.reload();
+            } else {
+                startCamera();
             }
         });
         
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check browser support
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                updateStatus('❌ Browser does not support camera access', 'error');
-                startButton.disabled = true;
-                startButton.textContent = 'Unsupported Browser';
-                return;
-            }
-            
-            // Check if library loaded
-            if (!checkLibraryLoaded()) {
-                // Try to reload library after a delay
-                setTimeout(() => {
-                    if (!checkLibraryLoaded()) {
-                        updateStatus('❌ Failed to load scanner. Check internet connection.', 'error');
-                        startButton.textContent = 'Refresh Page';
-                        startButton.onclick = function() {
-                            location.reload();
-                        };
-                    }
-                }, 2000);
-            }
-            
-            // Get initial camera list
-            getCameras();
-            
-            // Update status
-            updateStatus('Ready to scan');
-        });
+        document.getElementById('stop-camera-btn').addEventListener('click', stopScanner);
         
-        // Clean up on page unload
         window.addEventListener('beforeunload', function() {
             if (html5QrCode && isScanning) {
                 html5QrCode.stop();
             }
         });
         
-        // Global error handler to catch any remaining errors
-        window.addEventListener('error', function(event) {
-            if (event.message.includes('Html5Qrcode') || event.message.includes('Html6Grade')) {
-                console.error('Library error caught:', event.message);
-                updateStatus('❌ Library error. Please refresh.', 'error');
-                startButton.disabled = true;
-                startButton.textContent = 'Refresh Page';
-                startButton.onclick = function() {
-                    location.reload();
-                };
-            }
+        // Auto-start check
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                if (typeof Html5Qrcode !== 'undefined') {
+                    document.getElementById('start-camera-btn').textContent = 'Start Camera';
+                    document.getElementById('permission-status').textContent = 'Click "Start Camera" to begin scanning';
+                    updateStatus('Ready to scan');
+                }
+            }, 1000);
         });
     </script>
 </body>
